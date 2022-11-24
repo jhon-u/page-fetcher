@@ -5,17 +5,42 @@
 
 const request = require('request');
 const fs = require('fs');
+const readline = require('readline');
 
 const fetcher = (url, path) => {
   request(url, function(error, response, body) {
     console.error('error:', error); // Print the error if one occurred
     console.log('statusCode:', response && response.statusCode); // Print the response status code if a response was received
   
-    fs.writeFile(path, body, err => {
+    fs.open(path, 'wx', function(err, fd) {
       if (err) {
-        console.error(err);
+        if (err.code === 'EEXIST') {
+          console.log(err, fd);
+          const rl = readline.createInterface({
+            input: process.stdin,
+            output: process.stdout
+          });
+
+          rl.question(`The file at ${path} already exist. Type 'y' without quotes to override it. `, (response) => {
+            if (response.toLowerCase() === 'y') {
+              fs.writeFile(path, body, err => {
+                if (err) {
+                  console.error(err);
+                }
+                console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
+              });
+            }
+            rl.close();
+          });
+        }
+      } else {
+        fs.writeFile(path, body, err => {
+          if (err) {
+            console.error(err);
+          }
+          console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
+        });
       }
-      console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
     });
   });
 };
