@@ -15,33 +15,35 @@ const fetcher = (url, path) => {
     fs.open(path, 'wx', function(err, fd) {
       if (err) {
         if (err.code === 'EEXIST') {
-          console.log(err, fd);
-          const rl = readline.createInterface({
-            input: process.stdin,
-            output: process.stdout
-          });
-
-          rl.question(`The file at ${path} already exist. Type 'y' without quotes to override it. `, (response) => {
-            if (response.toLowerCase() === 'y') {
-              fs.writeFile(path, body, err => {
-                if (err) {
-                  console.error(err);
-                }
-                console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
-              });
-            }
-            rl.close();
-          });
+          return fileAlreadyExists(path, body);
         }
+        console.log('ERROR: ' + err);
       } else {
-        fs.writeFile(path, body, err => {
-          if (err) {
-            console.error(err);
-          }
-          console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
-        });
+        return writeFileToSystem(path, body);
       }
     });
+  });
+};
+
+const writeFileToSystem = (path, body) => {
+  fs.writeFile(path, body, err => {
+    if (err) {
+      console.error(err);
+    }
+    console.log(`Downloaded and saved ${body.length} bytes to ${path}`);
+  });
+};
+
+const fileAlreadyExists = (path, body) => {
+  const rl = readline.createInterface({
+    input: process.stdin,
+    output: process.stdout
+  });
+  rl.question(`The file at ${path} already exist. Type 'y' without quotes to override it. `, (response) => {
+    if (response.toLowerCase() === 'y') {
+      writeFileToSystem(path, body);
+    }
+    rl.close();
   });
 };
 
